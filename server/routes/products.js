@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Import Cloudinary utilities
-const { upload: cloudinaryUpload, deleteImage } = require('../utils/cloudinary');
+const { upload: cloudinaryUpload, deleteImage, isCloudinaryConfigured } = require('../utils/cloudinary');
 
 const router = express.Router();
 
@@ -337,8 +337,8 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
 // Image upload endpoint - uses Cloudinary if configured, otherwise local storage
 router.post('/upload-image', (req, res, next) => {
-  // Check if Cloudinary is configured
-  if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+  // Check if Cloudinary is properly configured
+  if (isCloudinaryConfigured() && cloudinaryUpload) {
     // Use Cloudinary
     cloudinaryUpload.single('image')(req, res, (err) => {
       if (err) {
