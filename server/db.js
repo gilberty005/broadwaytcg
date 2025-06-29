@@ -33,6 +33,9 @@ pool.on('error', (err) => {
 // Initialize database tables
 const initDatabase = async () => {
   try {
+    // Create extensions if needed
+    await pool.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+
     // Users table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -87,9 +90,16 @@ const initDatabase = async () => {
         notes TEXT,
         is_for_sale BOOLEAN DEFAULT FALSE,
         asking_price DECIMAL(10,2),
+        grading_company VARCHAR(50),
+        grade VARCHAR(10),
+        condition VARCHAR(50),
+        grading_status VARCHAR(20) DEFAULT 'raw',
+        raw_card_cost DECIMAL(10,2),
+        grading_cost DECIMAL(10,2),
+        predicted_grade VARCHAR(10),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(user_id, product_id)
+        UNIQUE(user_id, product_id, grading_company, grade, condition, grading_status)
       )
     `);
 
@@ -103,7 +113,9 @@ const initDatabase = async () => {
         currency VARCHAR(3) DEFAULT 'USD',
         date_recorded TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         url TEXT,
-        condition VARCHAR(50)
+        condition VARCHAR(50),
+        grading_company VARCHAR(50),
+        grade VARCHAR(10)
       )
     `);
 
@@ -126,8 +138,8 @@ const initDatabase = async () => {
       CREATE TABLE IF NOT EXISTS trades (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        traded_away JSONB NOT NULL, -- Array of collection item IDs and details
-        received JSONB NOT NULL,    -- Array of product IDs and details
+        traded_away JSONB NOT NULL,
+        received JSONB NOT NULL,
         cash_delta DECIMAL(10,2) DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -152,7 +164,7 @@ const initDatabase = async () => {
       CREATE TABLE IF NOT EXISTS user_stat_history (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        stat_type VARCHAR(50) NOT NULL, -- e.g. 'lifetime_earnings', 'profit_loss_pct'
+        stat_type VARCHAR(50) NOT NULL,
         value DECIMAL(16,6) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
