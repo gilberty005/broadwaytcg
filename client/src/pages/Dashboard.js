@@ -52,8 +52,8 @@ const Dashboard = () => {
 
   const quickActions = [
     {
-      title: 'Add Product to Collection',
-      description: 'Add a new Pokemon product to your collection',
+      title: 'Add Product to Database',
+      description: 'Can\'t find a product to add to your collection? Add one here to the global database',
       icon: Plus,
       href: '/products/add',
       color: 'bg-blue-500'
