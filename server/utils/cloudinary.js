@@ -15,30 +15,45 @@ try {
 let storage, upload;
 
 if (cloudinary && CloudinaryStorage) {
-  // Configure Cloudinary
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-  });
+  try {
+    // Configure Cloudinary
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET
+    });
 
-  // Configure Cloudinary storage
-  storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-      folder: 'pokemon-collectr',
-      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-      transformation: [
-        { width: 800, height: 800, crop: 'limit' }, // Resize large images
-        { quality: 'auto:good' } // Optimize quality
-      ]
-    }
-  });
+    // Test Cloudinary configuration
+    console.log('🔧 Testing Cloudinary configuration...');
+    console.log('📦 Cloud Name:', process.env.CLOUDINARY_CLOUD_NAME);
+    console.log('🔑 API Key:', process.env.CLOUDINARY_API_KEY ? 'Set' : 'Not set');
+    console.log('🔐 API Secret:', process.env.CLOUDINARY_API_SECRET ? 'Set' : 'Not set');
 
-  // Create multer upload instance
-  upload = multer({ storage });
+    // Configure Cloudinary storage
+    storage = new CloudinaryStorage({
+      cloudinary: cloudinary,
+      params: {
+        folder: 'pokemon-collectr',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+        transformation: [
+          { width: 800, height: 800, crop: 'limit' }, // Resize large images
+          { quality: 'auto:good' } // Optimize quality
+        ]
+      }
+    });
+
+    // Create multer upload instance
+    upload = multer({ storage });
+    console.log('✅ Cloudinary storage configured successfully');
+  } catch (error) {
+    console.error('❌ Error configuring Cloudinary storage:', error.message);
+    cloudinary = null;
+    CloudinaryStorage = null;
+    storage = null;
+    upload = null;
+  }
 } else {
-  // Fallback: create a dummy upload that will be handled by the route
+  console.log('⚠️  Cloudinary dependencies not available');
   upload = null;
 }
 
@@ -71,11 +86,18 @@ const getImageUrl = (publicId, options = {}) => {
 
 // Check if Cloudinary is properly configured
 const isCloudinaryConfigured = () => {
-  return cloudinary && 
-         CloudinaryStorage &&
-         process.env.CLOUDINARY_CLOUD_NAME && 
-         process.env.CLOUDINARY_API_KEY && 
-         process.env.CLOUDINARY_API_SECRET;
+  const hasDeps = cloudinary && CloudinaryStorage;
+  const hasEnvVars = process.env.CLOUDINARY_CLOUD_NAME && 
+                    process.env.CLOUDINARY_API_KEY && 
+                    process.env.CLOUDINARY_API_SECRET;
+  const hasUpload = !!upload;
+  
+  console.log('🔍 Cloudinary configuration check:');
+  console.log('  - Dependencies available:', hasDeps);
+  console.log('  - Environment variables set:', hasEnvVars);
+  console.log('  - Upload instance available:', hasUpload);
+  
+  return hasDeps && hasEnvVars && hasUpload;
 };
 
 module.exports = {

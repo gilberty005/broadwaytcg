@@ -379,6 +379,34 @@ router.post('/upload-image', (req, res, next) => {
   }
 });
 
+// Test Cloudinary credentials
+router.get('/test/cloudinary', async (req, res) => {
+  try {
+    const { cloudinary } = require('../utils/cloudinary');
+    if (!cloudinary) {
+      return res.json({ 
+        success: false, 
+        error: 'Cloudinary not available',
+        message: 'Cloudinary package not loaded properly'
+      });
+    }
+
+    // Test basic Cloudinary functionality
+    const testResult = await cloudinary.api.ping();
+    res.json({ 
+      success: true, 
+      message: 'Cloudinary credentials are working!',
+      ping: testResult
+    });
+  } catch (error) {
+    res.json({ 
+      success: false, 
+      error: error.message,
+      message: 'Cloudinary credentials are invalid or not working'
+    });
+  }
+});
+
 // Debug endpoint to check Cloudinary configuration
 router.get('/debug/cloudinary', (req, res) => {
   const config = {
