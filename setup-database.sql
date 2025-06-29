@@ -1,17 +1,15 @@
 -- Pokemon Collectr Database Setup Script
--- Run this script as a PostgreSQL superuser
+-- Use this script to reset and initialize the schema on a fresh database
 
--- Create the database
-CREATE DATABASE pokemon_collectr;
-
--- Create a user for the application (optional)
--- CREATE USER pokemon_user WITH PASSWORD 'your_secure_password';
-
--- Grant privileges to the user (if you created one)
--- GRANT ALL PRIVILEGES ON DATABASE pokemon_collectr TO pokemon_user;
-
--- Connect to the new database
-\c pokemon_collectr;
+-- Drop tables if they exist (for a full reset)
+DROP TABLE IF EXISTS user_stat_history CASCADE;
+DROP TABLE IF EXISTS user_transactions CASCADE;
+DROP TABLE IF EXISTS trades CASCADE;
+DROP TABLE IF EXISTS wishlist CASCADE;
+DROP TABLE IF EXISTS price_history CASCADE;
+DROP TABLE IF EXISTS collections CASCADE;
+DROP TABLE IF EXISTS products CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 
 -- Create extensions if needed
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
