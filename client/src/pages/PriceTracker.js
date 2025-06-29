@@ -7,7 +7,7 @@ import {
   DollarSign,
   BarChart3
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 const Statistics = () => {
   const [searchTerm, setSearchTerm] = useState('');
