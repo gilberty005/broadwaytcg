@@ -10,57 +10,6 @@ import {
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 const Statistics = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCard, setSelectedCard] = useState(null);
-  const [timeRange, setTimeRange] = useState('30d');
-
-  // Fetch price tracking data
-  const { data: priceData, isLoading, error, refetch } = useQuery(
-    ['priceTracking', searchTerm, selectedCard, timeRange],
-    async () => {
-      if (!selectedCard) return null;
-      
-      const params = new URLSearchParams({
-        card_id: selectedCard,
-        time_range: timeRange
-      });
-      
-      const response = await axios.get(`/api/prices/tracking?${params}`);
-      return response.data;
-    },
-    {
-      enabled: !!selectedCard
-    }
-  );
-
-  // Fetch cards for search
-  const { data: cardsData } = useQuery(
-    ['cards', 'search', searchTerm],
-    async () => {
-      if (!searchTerm.trim()) return { cards: [] };
-      
-      const params = new URLSearchParams({
-        search: searchTerm,
-        limit: 10
-      });
-      
-      const response = await axios.get(`/api/cards?${params}`);
-      return response.data;
-    },
-    {
-      enabled: searchTerm.trim().length > 0
-    }
-  );
-
-  // Fetch recent price updates
-  const { data: recentUpdates } = useQuery(
-    'recentPriceUpdates',
-    async () => {
-      const response = await axios.get('/api/prices/recent');
-      return response.data;
-    }
-  );
-
   const { data: stats } = useQuery(
     'collectionStats',
     async () => {

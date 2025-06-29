@@ -112,7 +112,7 @@ const Products = () => {
   };
 
   const handleCollectionInput = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, checked } = e.target;
     if (name === 'inGrading') {
       setInGrading(checked);
     } else {
