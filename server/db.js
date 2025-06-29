@@ -181,6 +181,11 @@ const initDatabase = async () => {
       CREATE INDEX IF NOT EXISTS idx_products_set_code ON products(set_code);
     `);
 
+    // Run migration to add missing columns to existing tables
+    console.log('🔄 Running database migration for existing tables...');
+    const { migrateDatabase } = require('./migrate-database');
+    await migrateDatabase();
+
     console.log('✅ Database tables initialized successfully');
   } catch (error) {
     console.error('❌ Error initializing database:', error);
