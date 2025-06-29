@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from 'react-query';
 import axios from 'axios';
-import { Plus, X, Search } from 'lucide-react';
+import { X, Search } from 'lucide-react';
 
 const Trade = () => {
   // Step state
@@ -135,27 +135,6 @@ const Trade = () => {
   // Remove product from selection
   const removeSelectedProduct = (id) => {
     setSelectedProducts(selectedProducts.filter(p => p.id !== id));
-  };
-
-  // Helper: fetch missing market prices for selectedProducts
-  const fetchMissingMarketPrices = async () => {
-    setFetchingPrices(true);
-    try {
-      const updated = await Promise.all(selectedProducts.map(async (product) => {
-        if (product.current_market_price == null) {
-          // Fetch from backend
-          const res = await axios.get(`/api/prices/product/${product.id}`);
-          const price = res.data?.currentPrice;
-          return { ...product, current_market_price: price };
-        }
-        return product;
-      }));
-      setSelectedProducts(updated);
-    } catch (err) {
-      alert('Failed to fetch market prices for some products.');
-    } finally {
-      setFetchingPrices(false);
-    }
   };
 
   // Refresh all market prices before trade

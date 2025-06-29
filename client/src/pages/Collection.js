@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import axios from 'axios';
 import { 
   Search, 
-  Filter, 
   Plus, 
   Edit, 
   Trash2, 
@@ -117,7 +116,7 @@ const Collection = () => {
   };
 
   const handleDeleteInput = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, checked } = e.target;
     if (name === 'wasSold') {
       setDeleteForm((prev) => ({ ...prev, wasSold: checked }));
     } else {
@@ -289,7 +288,7 @@ const Collection = () => {
   };
 
   const handleEditInput = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, checked } = e.target;
     if (name === 'inGrading') {
       setEditForm((prev) => ({ ...prev, inGrading: checked }));
     } else {

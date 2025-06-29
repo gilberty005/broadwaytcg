@@ -2,15 +2,12 @@ import React, { useState } from 'react';
 import { useQuery } from 'react-query';
 import axios from 'axios';
 import { 
-  Search, 
   TrendingUp, 
   TrendingDown,
   DollarSign,
-  Calendar,
-  BarChart3,
-  RefreshCw
+  BarChart3
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 const Statistics = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -125,20 +122,6 @@ const Statistics = () => {
       month: 'short',
       day: 'numeric'
     });
-  };
-
-  const getPriceChangeColor = (change) => {
-    if (!change) return 'text-gray-500';
-    return change > 0 ? 'text-green-600' : 'text-red-600';
-  };
-
-  const getPriceChangeIcon = (change) => {
-    if (!change) return null;
-    return change > 0 ? (
-      <TrendingUp className="h-4 w-4 text-green-600" />
-    ) : (
-      <TrendingDown className="h-4 w-4 text-red-600" />
-    );
   };
 
   const getTotalMarketPrice = () => {

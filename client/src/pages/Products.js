@@ -16,7 +16,6 @@ const Products = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('');
   const [selectedSet, setSelectedSet] = useState('');
-  const [selectedRarity, setSelectedRarity] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
@@ -39,7 +38,7 @@ const Products = () => {
 
   // Fetch products data
   const { data: productsData, isLoading, error } = useQuery(
-    ['products', currentPage, searchTerm, selectedType, selectedSet, selectedRarity],
+    ['products', currentPage, searchTerm, selectedType, selectedSet],
     async () => {
       const params = new URLSearchParams({
         page: currentPage,
@@ -47,7 +46,6 @@ const Products = () => {
         search: searchTerm,
         product_type: selectedType,
         set: selectedSet,
-        rarity: selectedRarity
       });
       
       const response = await axios.get(`/api/products?${params}`);
@@ -63,11 +61,6 @@ const Products = () => {
 
   const { data: setsData } = useQuery('sets', async () => {
     const response = await axios.get('/api/products/sets/list');
-    return response.data;
-  });
-
-  const { data: raritiesData } = useQuery('rarities', async () => {
-    const response = await axios.get('/api/products/rarities/list');
     return response.data;
   });
 
@@ -406,12 +399,12 @@ const Products = () => {
           </div>
           <h3 className="text-2xl font-semibold text-gray-900 mb-2">No products found</h3>
           <p className="text-gray-600 mb-6">
-            {searchTerm || selectedType || selectedSet || selectedRarity 
+            {searchTerm || selectedType || selectedSet 
               ? 'Try adjusting your search criteria'
               : 'No products have been added to the database yet'
             }
           </p>
-          {!searchTerm && !selectedType && !selectedSet && !selectedRarity && (
+          {!searchTerm && !selectedType && !selectedSet && (
             <Link to="/products/add" className="btn-primary flex items-center justify-center text-lg px-8 py-3">
               <Plus className="h-5 w-5 mr-2" />
               Add First Product

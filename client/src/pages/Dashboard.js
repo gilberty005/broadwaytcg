@@ -8,7 +8,6 @@ import {
   DollarSign, 
   Plus, 
   Search, 
-  BarChart3,
   ArrowUpRight,
   ArrowDownRight,
   TrendingDown
