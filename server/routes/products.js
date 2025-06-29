@@ -337,11 +337,17 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
 // Image upload endpoint - uses Cloudinary if configured, otherwise local storage
 router.post('/upload-image', (req, res, next) => {
+  console.log('🖼️  Image upload request received');
+  console.log('🔧 Cloudinary configured:', isCloudinaryConfigured());
+  console.log('📦 Cloudinary upload available:', !!cloudinaryUpload);
+  
   // Check if Cloudinary is properly configured
   if (isCloudinaryConfigured() && cloudinaryUpload) {
+    console.log('☁️  Using Cloudinary for upload');
     // Use Cloudinary
     cloudinaryUpload.single('image')(req, res, (err) => {
       if (err) {
+        console.error('❌ Cloudinary upload error:', err);
         return res.status(400).json({ error: 'Upload failed' });
       }
       if (!req.file) {
@@ -350,12 +356,15 @@ router.post('/upload-image', (req, res, next) => {
       
       // Cloudinary returns the full URL directly
       const imageUrl = req.file.path;
+      console.log('✅ Cloudinary upload successful:', imageUrl);
       res.json({ imageUrl });
     });
   } else {
+    console.log('💾 Using local storage for upload');
     // Use local storage as fallback
     localUpload.single('image')(req, res, (err) => {
       if (err) {
+        console.error('❌ Local upload error:', err);
         return res.status(400).json({ error: 'Upload failed' });
       }
       if (!req.file) {
@@ -364,9 +373,25 @@ router.post('/upload-image', (req, res, next) => {
       
       // Return a full URL that the client can use
       const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+      console.log('✅ Local upload successful:', imageUrl);
       res.json({ imageUrl });
     });
   }
+});
+
+// Debug endpoint to check Cloudinary configuration
+router.get('/debug/cloudinary', (req, res) => {
+  const config = {
+    cloudinary_available: !!require('../utils/cloudinary').cloudinary,
+    cloudinary_storage_available: !!require('../utils/cloudinary').upload,
+    is_configured: require('../utils/cloudinary').isCloudinaryConfigured(),
+    env_vars: {
+      cloud_name: !!process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: !!process.env.CLOUDINARY_API_KEY,
+      api_secret: !!process.env.CLOUDINARY_API_SECRET
+    }
+  };
+  res.json(config);
 });
 
 module.exports = router; 
