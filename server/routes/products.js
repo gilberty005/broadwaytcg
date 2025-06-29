@@ -4,6 +4,9 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 
+// Import Cloudinary utilities
+const { upload: cloudinaryUpload, deleteImage } = require('../utils/cloudinary');
+
 const router = express.Router();
 
 // Middleware to authenticate JWT tokens
@@ -24,6 +27,22 @@ const authenticateToken = (req, res, next) => {
     next();
   });
 };
+
+// Fallback local storage setup (if Cloudinary not configured)
+const uploadDir = path.join(__dirname, '../../uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
+const localStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + '-' + file.originalname.replace(/\s+/g, '_'));
+  }
+});
+const localUpload = multer({ storage: localStorage });
 
 // Get all products with pagination and filtering
 router.get('/', async (req, res) => {
@@ -316,30 +335,38 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Multer setup for image uploads
-const uploadDir = path.join(__dirname, '../../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + '-' + file.originalname.replace(/\s+/g, '_'));
+// Image upload endpoint - uses Cloudinary if configured, otherwise local storage
+router.post('/upload-image', (req, res, next) => {
+  // Check if Cloudinary is configured
+  if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+    // Use Cloudinary
+    cloudinaryUpload.single('image')(req, res, (err) => {
+      if (err) {
+        return res.status(400).json({ error: 'Upload failed' });
+      }
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+      
+      // Cloudinary returns the full URL directly
+      const imageUrl = req.file.path;
+      res.json({ imageUrl });
+    });
+  } else {
+    // Use local storage as fallback
+    localUpload.single('image')(req, res, (err) => {
+      if (err) {
+        return res.status(400).json({ error: 'Upload failed' });
+      }
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+      
+      // Return a full URL that the client can use
+      const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+      res.json({ imageUrl });
+    });
   }
-});
-const upload = multer({ storage });
-
-// Image upload endpoint
-router.post('/upload-image', upload.single('image'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' });
-  }
-  // Return a full URL that the client can use
-  const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-  res.json({ imageUrl });
 });
 
 module.exports = router; 
