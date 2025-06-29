@@ -1,15 +1,5 @@
 -- Pokemon Collectr Database Setup Script
--- Use this script to reset and initialize the schema on a fresh database
-
--- Drop tables if they exist (for a full reset)
-DROP TABLE IF EXISTS user_stat_history CASCADE;
-DROP TABLE IF EXISTS user_transactions CASCADE;
-DROP TABLE IF EXISTS trades CASCADE;
-DROP TABLE IF EXISTS wishlist CASCADE;
-DROP TABLE IF EXISTS price_history CASCADE;
-DROP TABLE IF EXISTS collections CASCADE;
-DROP TABLE IF EXISTS products CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
+-- Use this script to initialize the schema on a fresh database (non-destructive)
 
 -- Create extensions if needed
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
