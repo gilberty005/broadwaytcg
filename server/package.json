@@ -17,6 +17,11 @@
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.1",
     "helmet": "^8.1.0",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "jsonwebtoken": "^9.0.2",
+    "axios": "^1.6.8",
+    "multer": "^2.0.0",
+    "cheerio": "^1.0.0-rc.12",
+    "qs": "^6.12.0"
   }
 }
