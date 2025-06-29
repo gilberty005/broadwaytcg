@@ -60,7 +60,7 @@ const Dashboard = () => {
     },
     {
       title: 'Browse Products',
-      description: 'Search and browse all available products',
+      description: 'Search and browse all available products, then add them to your collection',
       icon: Search,
       href: '/products',
       color: 'bg-green-500'
