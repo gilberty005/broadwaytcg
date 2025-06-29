@@ -158,6 +158,33 @@ const Trade = () => {
     }
   };
 
+  // Refresh all market prices before trade
+  const refreshMarketPrices = async () => {
+    setFetchingPrices(true);
+    try {
+      // First, refresh eBay prices for the user's collection
+      await axios.post('/api/prices/update-ebay-prices');
+      
+      // Then fetch updated market prices for selected products
+      const updated = await Promise.all(selectedProducts.map(async (product) => {
+        try {
+          const res = await axios.get(`/api/prices/product/${product.id}`);
+          const price = res.data?.currentPrice;
+          return { ...product, current_market_price: price };
+        } catch (err) {
+          console.error(`Failed to fetch price for ${product.name}:`, err);
+          return product; // Keep original if fetch fails
+        }
+      }));
+      setSelectedProducts(updated);
+    } catch (err) {
+      console.error('Failed to refresh market prices:', err);
+      alert('Failed to refresh market prices. Please try again.');
+    } finally {
+      setFetchingPrices(false);
+    }
+  };
+
   // Step 1: Select from collection
   const renderStep1 = () => (
     <div>
@@ -451,48 +478,65 @@ const Trade = () => {
 
   // Submit trade to backend
   const handleConfirmTrade = async () => {
-    // Check for missing market prices
-    const missing = selectedProducts.some(p => p.current_market_price == null);
-    if (missing) {
-      await fetchMissingMarketPrices();
-      // Re-check after fetching
-      if (selectedProducts.some(p => p.current_market_price == null)) {
-        alert('Some products are still missing market prices. Please try again.');
-        return;
-      }
-    }
     setSubmitting(true);
     try {
-      await axios.post('/api/collections/trades', {
+      // Step 1: Refresh market prices first
+      await refreshMarketPrices();
+      
+      // Step 2: Check for missing market prices after refresh
+      const missing = selectedProducts.some(p => p.current_market_price == null);
+      if (missing) {
+        alert('Some products are still missing market prices after refresh. Please try again.');
+        setSubmitting(false);
+        return;
+      }
+
+      // Step 3: Prepare trade data with proper investment allocation
+      const tradeData = {
         traded_away: selectedCollectionItems.map(item => ({
           id: item.id,
           product_id: item.product_id,
+          purchase_price: parseFloat(item.purchase_price) || 0,
+          market_price: parseFloat(item.current_market_price) || 0,
           grading_company: item.grading_company,
           grade: item.grade,
           condition: item.condition,
           quantity: item.quantity,
         })),
-        received: selectedProducts.map(product => ({
-          id: product.id,
-          name: product.name,
-          product_type: product.product_type,
-          set_name: product.set_name,
-          grading_company: product.isGraded ? product.grading_company : '',
-          grade: product.isGraded ? product.grade : '',
-          condition: !product.isGraded ? product.condition : '',
-          quantity: product.quantity,
-          purchase_price: getProductInvestment(product),
-        })),
+        received: selectedProducts.map(product => {
+          const investment = getProductInvestment(product);
+          return {
+            id: product.id,
+            name: product.name,
+            product_type: product.product_type,
+            set_name: product.set_name,
+            grading_company: product.isGraded ? product.grading_company : '',
+            grade: product.isGraded ? product.grade : '',
+            condition: !product.isGraded ? product.condition : '',
+            quantity: product.quantity,
+            purchase_price: investment,
+            market_price: parseFloat(product.current_market_price) || 0,
+          };
+        }),
         cash_delta: parseFloat(cashDelta) || 0,
-      });
+      };
+
+      console.log('Submitting trade data:', tradeData);
+
+      // Step 4: Submit trade
+      const response = await axios.post('/api/collections/trades', tradeData);
+      
+      console.log('Trade response:', response.data);
+      
       alert('Trade submitted successfully!');
-      // Optionally reset state or redirect
+      // Reset state
       setStep(1);
       setSelectedCollection([]);
       setSelectedProducts([]);
       setCashDelta('');
     } catch (error) {
-      alert('Failed to submit trade.');
+      console.error('Trade submission error:', error);
+      alert('Failed to submit trade: ' + (error.response?.data?.error || error.message));
     } finally {
       setSubmitting(false);
     }

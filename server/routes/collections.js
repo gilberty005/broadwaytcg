@@ -34,7 +34,7 @@ async function logStatChange(userId, statType, value) {
   }
 }
 
-// Helper function to calculate and log profit/loss percentage
+// Helper function to calculate and log profit/loss percentage and value
 async function calculateAndLogProfitLoss(userId) {
   try {
     // Get total investment
@@ -67,11 +67,13 @@ async function calculateAndLogProfitLoss(userId) {
       
       const totalMarketValue = parseFloat(marketRes.rows[0].total_market_value) || 0;
       
-      // Calculate profit/loss percentage
+      // Calculate profit/loss percentage and value
       const profitLossPct = ((totalMarketValue - totalInvestment) / totalInvestment) * 100;
+      const profitLossValue = totalMarketValue - totalInvestment;
       
-      // Log the profit/loss percentage
+      // Log the profit/loss percentage and value
       await logStatChange(userId, 'profit_loss_pct', profitLossPct);
+      await logStatChange(userId, 'lifetime_profit_loss_value', profitLossValue);
     }
   } catch (error) {
     console.error('Error calculating profit/loss:', error);
@@ -391,17 +393,19 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     // Calculate the total investment for this item
     const investment = (parseFloat(existingItem.rows[0].purchase_price) || 0) * (existingItem.rows[0].quantity || 1);
 
-    // If sold_price is provided, update user's lifetime_earnings with profit/loss
+    // If sold_price is provided, update user's lifetime_earnings with sale price only
     if (sold_price !== undefined && sold_price !== null && sold_price !== '') {
-      const earnings = parseFloat(sold_price) - investment;
+      const saleAmount = parseFloat(sold_price);
       await db.query(
         'UPDATE users SET lifetime_earnings = lifetime_earnings + $1 WHERE id = $2',
-        [earnings, req.user.userId]
+        [saleAmount, req.user.userId]
       );
-      
       // Log the lifetime earnings change
-      await logStatChange(req.user.userId, 'lifetime_earnings', earnings);
-      
+      await logStatChange(req.user.userId, 'lifetime_earnings', saleAmount);
+      // Log the new total lifetime_earnings value for history
+      const newEarningsRes = await db.query('SELECT lifetime_earnings FROM users WHERE id = $1', [req.user.userId]);
+      const newEarnings = parseFloat(newEarningsRes.rows[0]?.lifetime_earnings) || 0;
+      await logStatChange(req.user.userId, 'lifetime_earnings', newEarnings);
       // Calculate and log profit/loss percentage
       await calculateAndLogProfitLoss(req.user.userId);
     } else {
@@ -411,10 +415,12 @@ router.delete('/:id', authenticateToken, async (req, res) => {
           'UPDATE users SET lifetime_earnings = lifetime_earnings + $1 WHERE id = $2',
           [investment, req.user.userId]
         );
-        
         // Log the lifetime earnings change (money returned)
         await logStatChange(req.user.userId, 'lifetime_earnings', investment);
-        
+        // Log the new total lifetime_earnings value for history
+        const newEarningsRes = await db.query('SELECT lifetime_earnings FROM users WHERE id = $1', [req.user.userId]);
+        const newEarnings = parseFloat(newEarningsRes.rows[0]?.lifetime_earnings) || 0;
+        await logStatChange(req.user.userId, 'lifetime_earnings', newEarnings);
         // Calculate and log profit/loss percentage
         await calculateAndLogProfitLoss(req.user.userId);
       }
@@ -546,17 +552,29 @@ router.post('/trades', authenticateToken, async (req, res) => {
     if (!Array.isArray(traded_away) || !Array.isArray(received)) {
       return res.status(400).json({ error: 'traded_away and received must be arrays' });
     }
+    
     await client.query('BEGIN');
+    
     // Insert trade
     const result = await client.query(
       `INSERT INTO trades (user_id, traded_away, received, cash_delta)
        VALUES ($1, $2, $3, $4) RETURNING *`,
       [req.user.userId, JSON.stringify(traded_away), JSON.stringify(received), cash_delta || 0]
     );
+    
+    // Calculate total investment and market value of traded_away items
+    const tradedAwayInvestment = traded_away.reduce((sum, item) => 
+      sum + ((parseFloat(item.purchase_price) || 0) * (item.quantity || 1)), 0);
+    const tradedAwayMarketValue = traded_away.reduce((sum, item) => 
+      sum + ((parseFloat(item.market_price) || 0) * (item.quantity || 1)), 0);
+    
+    // Calculate total market value of received items
+    const receivedMarketValue = received.reduce((sum, item) => 
+      sum + ((parseFloat(item.market_price) || 0) * (item.quantity || 1)), 0);
+    
     // Remove/decrement traded_away items
     for (const item of traded_away) {
       const { id, quantity = 1 } = item;
-      // Get current quantity
       const colRes = await client.query('SELECT quantity FROM collections WHERE id = $1 AND user_id = $2', [id, req.user.userId]);
       if (colRes.rows.length > 0) {
         const currentQty = parseInt(colRes.rows[0].quantity, 10);
@@ -567,10 +585,46 @@ router.post('/trades', authenticateToken, async (req, res) => {
         }
       }
     }
-    // Add/increment received items
+    
+    // Calculate investment allocation for received items
+    let totalInvestmentToAllocate = tradedAwayInvestment;
+    let lifetimeEarningsDelta = 0;
+    
+    // Handle cash_delta logic
+    if (cash_delta > 0) {
+      // User is adding money to the trade
+      totalInvestmentToAllocate += cash_delta;
+      lifetimeEarningsDelta -= cash_delta; // Money spent, reduce lifetime earnings
+    } else if (cash_delta < 0) {
+      // User is receiving money from the trade
+      const cashReceived = Math.abs(cash_delta);
+      
+      // Check if received items are worth more than traded away items
+      if (receivedMarketValue > tradedAwayMarketValue) {
+        // Received items are worth more - keep full investment allocation
+        // All received cash goes to lifetime earnings
+        lifetimeEarningsDelta += cashReceived;
+      } else {
+        // Received items are worth less - reduce investment allocation
+        const reductionRatio = receivedMarketValue / tradedAwayMarketValue;
+        totalInvestmentToAllocate = tradedAwayInvestment * reductionRatio;
+        
+        // Add excess cash to lifetime earnings
+        const excessCash = cashReceived - (tradedAwayMarketValue - receivedMarketValue);
+        if (excessCash > 0) {
+          lifetimeEarningsDelta += excessCash;
+        }
+      }
+    }
+    
+    // Add/increment received items with calculated investment allocation
     for (const item of received) {
       const { id: product_id, grading_company, grade, condition, quantity = 1, purchase_price } = item;
-      // Check if already in collection (match on user_id, product_id, grading_company, grade, condition)
+      
+      // Use the purchase_price that was calculated on the client side
+      const itemInvestment = parseFloat(purchase_price) || 0;
+      
+      // Check if already in collection
       const existing = await client.query(
         `SELECT * FROM collections WHERE user_id = $1 AND product_id = $2
          AND COALESCE(grading_company, '') = $3
@@ -578,13 +632,14 @@ router.post('/trades', authenticateToken, async (req, res) => {
          AND COALESCE(condition, '') = $5`,
         [req.user.userId, product_id, grading_company || '', grade || '', condition || '']
       );
+      
       if (existing.rows.length > 0) {
-        // Update quantity and average purchase_price
+        // Update quantity and weighted average purchase_price
         const oldQty = parseInt(existing.rows[0].quantity, 10);
         const oldPrice = parseFloat(existing.rows[0].purchase_price) || 0;
         const newQty = oldQty + quantity;
-        // Weighted average
-        const newPrice = ((oldPrice * oldQty) + (purchase_price * quantity)) / newQty;
+        const newPrice = ((oldPrice * oldQty) + (itemInvestment * quantity)) / newQty;
+        
         await client.query(
           'UPDATE collections SET quantity = $1, purchase_price = $2 WHERE id = $3 AND user_id = $4',
           [newQty, newPrice, existing.rows[0].id, req.user.userId]
@@ -593,48 +648,44 @@ router.post('/trades', authenticateToken, async (req, res) => {
         await client.query(
           `INSERT INTO collections (user_id, product_id, quantity, grading_company, grade, condition, purchase_price)
            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [req.user.userId, product_id, quantity, grading_company || '', grade || '', condition || '', purchase_price]
+          [req.user.userId, product_id, quantity, grading_company || '', grade || '', condition || '', itemInvestment]
         );
       }
     }
+    
     await client.query('COMMIT');
+    
     // Log user transaction for trade
-    const investmentAmount = traded_away.reduce((sum, item) => sum + ((parseFloat(item.purchase_price) || 0) * (item.quantity || 1)), 0);
-    const marketAmount = received.reduce((sum, item) => sum + ((parseFloat(item.purchase_price) || 0) * (item.quantity || 1)), 0);
+    const investmentAmount = tradedAwayInvestment;
+    const marketAmount = receivedMarketValue;
     await db.query(
       `INSERT INTO user_transactions (user_id, action, details, investment_amount, market_amount)
        VALUES ($1, $2, $3, $4, $5)`,
       [req.user.userId, 'trade', JSON.stringify({ traded_away, received, cash_delta }), investmentAmount, marketAmount]
     );
-    // After trade logic and before sending response
-    // Calculate market value of traded_away
-    const tradedMarket = traded_away.reduce((sum, item) => sum + ((parseFloat(item.market_price) || 0) * (item.quantity || 1)), 0);
-    // If cash_delta > tradedMarket, move excess to lifetime_earnings
-    if (cash_delta > tradedMarket) {
-      const excess = cash_delta - tradedMarket;
+    
+    // Update lifetime earnings if there's a delta
+    if (lifetimeEarningsDelta !== 0) {
       await db.query(
         'UPDATE users SET lifetime_earnings = lifetime_earnings + $1 WHERE id = $2',
-        [excess, req.user.userId]
+        [lifetimeEarningsDelta, req.user.userId]
       );
       
       // Log the lifetime earnings change
-      await logStatChange(req.user.userId, 'lifetime_earnings', excess);
-    }
-    // When a new item is added or money is added to a trade, subtract from lifetime_earnings
-    if (cash_delta > 0) {
-      await db.query(
-        'UPDATE users SET lifetime_earnings = lifetime_earnings - $1 WHERE id = $2',
-        [cash_delta, req.user.userId]
-      );
-      
-      // Log the lifetime earnings change
-      await logStatChange(req.user.userId, 'lifetime_earnings', -cash_delta);
+      await logStatChange(req.user.userId, 'lifetime_earnings', lifetimeEarningsDelta);
     }
     
     // Calculate and log profit/loss percentage after trade
     await calculateAndLogProfitLoss(req.user.userId);
     
-    res.status(201).json({ message: 'Trade recorded and collection updated', trade: result.rows[0] });
+    res.status(201).json({ 
+      message: 'Trade recorded and collection updated', 
+      trade: result.rows[0],
+      investmentAllocated: totalInvestmentToAllocate,
+      lifetimeEarningsChange: lifetimeEarningsDelta,
+      tradedAwayMarketValue,
+      receivedMarketValue
+    });
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Create trade error:', error);

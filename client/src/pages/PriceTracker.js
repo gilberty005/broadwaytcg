@@ -89,6 +89,21 @@ const Statistics = () => {
     }
   );
 
+  // Filter out 0% profit/loss points and -100% (missing market price) for the graph
+  const filteredStatHistory = statHistory ? statHistory.filter(dataPoint => {
+    if (dataPoint.profit_loss_pct !== undefined) {
+      const profitLossValue = parseFloat(dataPoint.profit_loss_pct);
+      // Filter out points that are very close to 0 or exactly -100%
+      if (Math.abs(profitLossValue) <= 0.01 || profitLossValue === -100) {
+        return false;
+      }
+    }
+    return true;
+  }) : [];
+
+  console.log('Original statHistory length:', statHistory?.length);
+  console.log('Filtered statHistory length:', filteredStatHistory?.length);
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -244,57 +259,42 @@ const Statistics = () => {
       )}
 
       {/* Graphs Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Lifetime Earnings Graph */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold mb-4">Lifetime Earnings Over Time</h2>
-          {statHistory && statHistory.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={statHistory} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tickFormatter={formatDate} />
-                <YAxis label={{ value: 'Earnings', angle: -90, position: 'insideLeft' }} tickFormatter={formatCurrency} />
-                <Tooltip formatter={(value) => formatCurrency(value)} />
-                <Line 
-                  type="monotone" 
-                  dataKey="lifetime_earnings" 
-                  stroke="#f59e42" 
-                  strokeWidth={2}
-                  name="Lifetime Earnings" 
-                  dot={{ fill: '#f59e42', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: '#f59e42', strokeWidth: 2, fill: '#fff' }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-64 text-gray-500">
-              <div className="text-center">
-                <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>No earnings data available yet</p>
-                <p className="text-sm">Start trading or selling cards to see your earnings history</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Profit/Loss Graph */}
-        <div className="bg-white rounded-lg shadow p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Profit/Loss Graph (left, shows % profit/loss) */}
+        <div className="bg-white rounded-lg shadow p-8">
           <h2 className="text-xl font-bold mb-4">Profit/Loss % Over Time</h2>
-          {statHistory && statHistory.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={statHistory} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tickFormatter={formatDate} />
-                <YAxis label={{ value: 'Profit/Loss %', angle: -90, position: 'insideLeft' }} tickFormatter={formatPercentage} />
-                <Tooltip formatter={(value) => formatPercentage(value)} />
+          {filteredStatHistory && filteredStatHistory.length > 0 ? (
+            <ResponsiveContainer width="100%" height={320}>
+              <LineChart data={filteredStatHistory} margin={{ top: 40, right: 40, left: 40, bottom: 40 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={date => new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
+                  minTickGap={30}
+                  angle={-15}
+                  textAnchor="end"
+                  height={50}
+                  interval="preserveStartEnd"
+                  padding={{ left: 10, right: 10 }}
+                />
+                <YAxis
+                  // label removed for cleaner look
+                  tickFormatter={formatPercentage}
+                  domain={['auto', 'auto']}
+                  allowDecimals={true}
+                  tickCount={6}
+                  padding={{ top: 20, bottom: 20 }}
+                />
+                <Tooltip formatter={(value) => formatPercentage(value)} labelFormatter={formatDate} />
                 <Line 
                   type="monotone" 
                   dataKey="profit_loss_pct" 
                   stroke="#10b981" 
                   strokeWidth={2}
                   name="Profit/Loss %" 
-                  dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: '#10b981', strokeWidth: 2, fill: '#fff' }}
+                  dot={{ fill: '#10b981', strokeWidth: 1, r: 4 }}
+                  activeDot={{ r: 7, stroke: '#10b981', strokeWidth: 2, fill: '#fff' }}
+                  connectNulls={false}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -304,6 +304,55 @@ const Statistics = () => {
                 <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                 <p>No profit/loss data available yet</p>
                 <p className="text-sm">Add cards to your collection to track performance</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Lifetime Earnings Graph (right, shows history of lifetime earnings) */}
+        <div className="bg-white rounded-lg shadow p-8">
+          <h2 className="text-xl font-bold mb-4">Lifetime Earnings Over Time</h2>
+          {statHistory && statHistory.length > 0 ? (
+            <ResponsiveContainer width="100%" height={320}>
+              <LineChart data={statHistory} margin={{ top: 40, right: 40, left: 40, bottom: 40 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={date => new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
+                  minTickGap={30}
+                  angle={-15}
+                  textAnchor="end"
+                  height={50}
+                  interval="preserveStartEnd"
+                  padding={{ left: 10, right: 10 }}
+                />
+                <YAxis
+                  // label removed for cleaner look
+                  tickFormatter={formatCurrency}
+                  domain={['auto', 'auto']}
+                  allowDecimals={true}
+                  tickCount={6}
+                  padding={{ top: 20, bottom: 20 }}
+                />
+                <Tooltip formatter={(value) => formatCurrency(value)} labelFormatter={formatDate} />
+                <Line 
+                  type="monotone" 
+                  dataKey="lifetime_earnings" 
+                  stroke="#f59e42" 
+                  strokeWidth={2}
+                  name="Lifetime Earnings" 
+                  dot={{ fill: '#f59e42', strokeWidth: 1, r: 4 }}
+                  activeDot={{ r: 7, stroke: '#f59e42', strokeWidth: 2, fill: '#fff' }}
+                  connectNulls={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-64 text-gray-500">
+              <div className="text-center">
+                <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>No earnings data available yet</p>
+                <p className="text-sm">Start trading or selling cards to see your earnings history</p>
               </div>
             </div>
           )}
