@@ -81,7 +81,6 @@ dist
 
 # Gatsby files
 .cache/
-public
 
 # Vuepress build output
 .vuepress/dist
@@ -165,9 +164,13 @@ config/local.json
 # package-lock.json
 # yarn.lock
 
+# Explicitly allow server/package-lock.json
+!server/package-lock.json
+
 # React specific
 # See https://create-react-app.dev/docs/using-the-public-folder/
 public/build/
+public/static/
 
 # Testing
 coverage/
