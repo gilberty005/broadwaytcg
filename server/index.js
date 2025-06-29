@@ -5,6 +5,9 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 require('dotenv').config();
 
+// Run dependency check
+require('./check-dependencies');
+
 const db = require('./db');
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');

@@ -4,10 +4,17 @@ const multer = require('multer');
 let cloudinary, CloudinaryStorage;
 try {
   cloudinary = require('cloudinary').v2;
-  CloudinaryStorage = require('multer-storage-cloudinary').CloudinaryStorage;
+  console.log('✅ Cloudinary package loaded successfully');
 } catch (error) {
-  console.log('⚠️  Cloudinary dependencies not installed. Using local storage only.');
+  console.log('❌ Cloudinary package not available:', error.message);
   cloudinary = null;
+}
+
+try {
+  CloudinaryStorage = require('multer-storage-cloudinary').CloudinaryStorage;
+  console.log('✅ CloudinaryStorage package loaded successfully');
+} catch (error) {
+  console.log('❌ CloudinaryStorage package not available:', error.message);
   CloudinaryStorage = null;
 }
 
@@ -47,6 +54,7 @@ if (cloudinary && CloudinaryStorage) {
     console.log('✅ Cloudinary storage configured successfully');
   } catch (error) {
     console.error('❌ Error configuring Cloudinary storage:', error.message);
+    console.error('❌ Error stack:', error.stack);
     cloudinary = null;
     CloudinaryStorage = null;
     storage = null;
@@ -54,6 +62,8 @@ if (cloudinary && CloudinaryStorage) {
   }
 } else {
   console.log('⚠️  Cloudinary dependencies not available');
+  console.log('  - cloudinary available:', !!cloudinary);
+  console.log('  - CloudinaryStorage available:', !!CloudinaryStorage);
   upload = null;
 }
 
@@ -96,6 +106,8 @@ const isCloudinaryConfigured = () => {
   console.log('  - Dependencies available:', hasDeps);
   console.log('  - Environment variables set:', hasEnvVars);
   console.log('  - Upload instance available:', hasUpload);
+  console.log('  - cloudinary object:', !!cloudinary);
+  console.log('  - CloudinaryStorage object:', !!CloudinaryStorage);
   
   return hasDeps && hasEnvVars && hasUpload;
 };
