@@ -71,11 +71,40 @@ app.get('/api/health', (req, res) => {
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/build')));
+  const buildPath = path.join(__dirname, '../client/build');
+  const indexPath = path.join(buildPath, 'index.html');
   
-  app.get('/:any*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
-  });
+  // Check if build directory exists
+  const fs = require('fs');
+  if (fs.existsSync(buildPath)) {
+    app.use(express.static(buildPath));
+    
+    app.get('/:any*', (req, res) => {
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).json({ 
+          error: 'Frontend not built', 
+          message: 'React build files not found. Please ensure the build process completed successfully.' 
+        });
+      }
+    });
+  } else {
+    console.log('⚠️  Warning: Client build directory not found. Serving API only.');
+    app.get('/', (req, res) => {
+      res.json({ 
+        message: 'Pokemon Collectr API is running',
+        note: 'Frontend build files not found. Please check the build process.',
+        apiEndpoints: {
+          health: '/api/health',
+          auth: '/api/auth',
+          products: '/api/products',
+          collections: '/api/collections',
+          prices: '/api/prices'
+        }
+      });
+    });
+  }
 }
 
 // Serve uploaded images with CORS headers
