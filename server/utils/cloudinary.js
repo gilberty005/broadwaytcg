@@ -1,5 +1,6 @@
 const multer = require('multer');
-const cloudinary = require('cloudinary');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 // Check if Cloudinary dependencies are available
 let CloudinaryStorage;
@@ -33,11 +34,10 @@ if (cloudinary && CloudinaryStorage && typeof CloudinaryStorage === 'function') 
     // Configure Cloudinary storage
     console.log('🔧 Creating CloudinaryStorage instance...');
     console.log('🔧 Cloudinary instance type:', typeof cloudinary);
-    console.log('🔧 Cloudinary v2 available:', !!cloudinary.v2);
-    console.log('🔧 Cloudinary uploader available:', !!cloudinary.v2?.uploader);
+    console.log('🔧 Cloudinary uploader available:', !!cloudinary.uploader);
     console.log('🔧 Full cloudinary object keys:', Object.keys(cloudinary));
     
-    // Use the cloudinary instance directly since v2 is not available
+    // Use the cloudinary instance directly
     storage = new CloudinaryStorage({
       cloudinary: cloudinary, // Pass the cloudinary instance directly
       params: {
