@@ -2,17 +2,6 @@ const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-// Check if Cloudinary dependencies are available
-let CloudinaryStorage;
-try {
-  const multerStorageCloudinary = require('multer-storage-cloudinary');
-  CloudinaryStorage = multerStorageCloudinary.CloudinaryStorage;
-  console.log('✅ Cloudinary packages loaded successfully');
-} catch (error) {
-  console.log('❌ Cloudinary packages not available:', error.message);
-  CloudinaryStorage = null;
-}
-
 // Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -57,8 +46,6 @@ if (cloudinary && CloudinaryStorage && typeof CloudinaryStorage === 'function') 
   } catch (error) {
     console.error('❌ Error configuring Cloudinary storage:', error.message);
     console.error('❌ Error stack:', error.stack);
-    cloudinary = null;
-    CloudinaryStorage = null;
     storage = null;
     upload = null;
   }
