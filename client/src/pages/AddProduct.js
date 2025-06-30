@@ -44,7 +44,7 @@ const AddProduct = () => {
       const response = await axios.post('/api/products/upload-image', formDataImg, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      setFormData(prev => ({ ...prev, image_url: response.data.imageUrl }));
+      setFormData(prev => ({ ...prev, image_url: response.data.image_url }));
     } catch (error) {
       alert('Failed to upload image. Please try again.');
     } finally {
