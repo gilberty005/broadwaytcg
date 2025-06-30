@@ -1,62 +1,29 @@
 const multer = require('multer');
+const cloudinary = require('cloudinary');
 
 // Check if Cloudinary dependencies are available
-let cloudinary, CloudinaryStorage;
-try {
-  cloudinary = require('cloudinary').v2;
-  console.log('✅ Cloudinary package loaded successfully');
-} catch (error) {
-  console.log('❌ Cloudinary package not available:', error.message);
-  cloudinary = null;
-}
-
+let CloudinaryStorage;
 try {
   const multerStorageCloudinary = require('multer-storage-cloudinary');
-  console.log('✅ multer-storage-cloudinary package loaded successfully');
-  console.log('📦 Available exports:', Object.keys(multerStorageCloudinary));
-  console.log('📦 Full module:', multerStorageCloudinary);
-  
-  // Try different ways to access CloudinaryStorage
-  CloudinaryStorage = multerStorageCloudinary.CloudinaryStorage || 
-                     multerStorageCloudinary.default || 
-                     multerStorageCloudinary;
-  
-  console.log('📦 CloudinaryStorage constructor:', typeof CloudinaryStorage);
-  console.log('📦 CloudinaryStorage value:', CloudinaryStorage);
-  
-  if (typeof CloudinaryStorage !== 'function') {
-    console.log('❌ CloudinaryStorage is not a constructor function');
-    console.log('🔍 Trying alternative import method...');
-    
-    // Try alternative import
-    try {
-      const { CloudinaryStorage: AltCloudinaryStorage } = require('multer-storage-cloudinary');
-      CloudinaryStorage = AltCloudinaryStorage;
-      console.log('📦 Alternative CloudinaryStorage:', typeof CloudinaryStorage);
-    } catch (altError) {
-      console.log('❌ Alternative import also failed:', altError.message);
-      CloudinaryStorage = null;
-    }
-  } else {
-    console.log('✅ CloudinaryStorage constructor is available');
-  }
+  CloudinaryStorage = multerStorageCloudinary.CloudinaryStorage;
+  console.log('✅ Cloudinary packages loaded successfully');
 } catch (error) {
-  console.log('❌ CloudinaryStorage package not available:', error.message);
+  console.log('❌ Cloudinary packages not available:', error.message);
   CloudinaryStorage = null;
 }
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 // Create storage and upload instances
 let storage, upload;
 
 if (cloudinary && CloudinaryStorage && typeof CloudinaryStorage === 'function') {
   try {
-    // Configure Cloudinary
-    cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET
-    });
-
     // Test Cloudinary configuration
     console.log('🔧 Testing Cloudinary configuration...');
     console.log('📦 Cloud Name:', process.env.CLOUDINARY_CLOUD_NAME);
