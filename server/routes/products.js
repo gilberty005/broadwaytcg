@@ -344,7 +344,6 @@ router.post('/upload-image', (req, res, next) => {
   // Check if Cloudinary is properly configured
   if (isCloudinaryConfigured() && cloudinaryUpload) {
     console.log('☁️  Using Cloudinary for upload');
-    // Use Cloudinary
     cloudinaryUpload.single('image')(req, res, (err) => {
       if (err) {
         console.error('❌ Cloudinary upload error:', err);
@@ -353,7 +352,6 @@ router.post('/upload-image', (req, res, next) => {
       if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded' });
       }
-      
       // Cloudinary returns the full URL directly
       const imageUrl = req.file.path;
       console.log('✅ Cloudinary upload successful:', imageUrl);
@@ -361,7 +359,6 @@ router.post('/upload-image', (req, res, next) => {
     });
   } else {
     console.log('💾 Using local storage for upload');
-    // Use local storage as fallback
     localUpload.single('image')(req, res, (err) => {
       if (err) {
         console.error('❌ Local upload error:', err);
@@ -370,7 +367,6 @@ router.post('/upload-image', (req, res, next) => {
       if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded' });
       }
-      
       // Return a full URL that the client can use
       const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
       console.log('✅ Local upload successful:', imageUrl);
