@@ -11,8 +11,19 @@ try {
 }
 
 try {
-  CloudinaryStorage = require('multer-storage-cloudinary').CloudinaryStorage;
-  console.log('✅ CloudinaryStorage package loaded successfully');
+  const multerStorageCloudinary = require('multer-storage-cloudinary');
+  console.log('✅ multer-storage-cloudinary package loaded successfully');
+  console.log('📦 Available exports:', Object.keys(multerStorageCloudinary));
+  
+  CloudinaryStorage = multerStorageCloudinary.CloudinaryStorage;
+  console.log('📦 CloudinaryStorage constructor:', typeof CloudinaryStorage);
+  
+  if (typeof CloudinaryStorage !== 'function') {
+    console.log('❌ CloudinaryStorage is not a constructor function');
+    CloudinaryStorage = null;
+  } else {
+    console.log('✅ CloudinaryStorage constructor is available');
+  }
 } catch (error) {
   console.log('❌ CloudinaryStorage package not available:', error.message);
   CloudinaryStorage = null;
@@ -37,6 +48,7 @@ if (cloudinary && CloudinaryStorage) {
     console.log('🔐 API Secret:', process.env.CLOUDINARY_API_SECRET ? 'Set' : 'Not set');
 
     // Configure Cloudinary storage
+    console.log('🔧 Creating CloudinaryStorage instance...');
     storage = new CloudinaryStorage({
       cloudinary: cloudinary,
       params: {
@@ -48,10 +60,11 @@ if (cloudinary && CloudinaryStorage) {
         ]
       }
     });
+    console.log('✅ CloudinaryStorage instance created successfully');
 
     // Create multer upload instance
     upload = multer({ storage });
-    console.log('✅ Cloudinary storage configured successfully');
+    console.log('✅ Cloudinary multer upload configured successfully');
   } catch (error) {
     console.error('❌ Error configuring Cloudinary storage:', error.message);
     console.error('❌ Error stack:', error.stack);
@@ -64,6 +77,7 @@ if (cloudinary && CloudinaryStorage) {
   console.log('⚠️  Cloudinary dependencies not available');
   console.log('  - cloudinary available:', !!cloudinary);
   console.log('  - CloudinaryStorage available:', !!CloudinaryStorage);
+  console.log('  - CloudinaryStorage type:', typeof CloudinaryStorage);
   upload = null;
 }
 
@@ -108,6 +122,7 @@ const isCloudinaryConfigured = () => {
   console.log('  - Upload instance available:', hasUpload);
   console.log('  - cloudinary object:', !!cloudinary);
   console.log('  - CloudinaryStorage object:', !!CloudinaryStorage);
+  console.log('  - CloudinaryStorage type:', typeof CloudinaryStorage);
   
   return hasDeps && hasEnvVars && hasUpload;
 };
