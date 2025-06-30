@@ -352,8 +352,8 @@ router.post('/upload-image', (req, res, next) => {
       if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded' });
       }
-      // Cloudinary returns the full URL directly
-      const image_url = req.file.path;
+      // Cloudinary returns the full URL directly (v1.x: req.file.url)
+      const image_url = req.file.url;
       console.log('✅ Cloudinary upload successful:', image_url);
       res.json({ image_url });
     });
