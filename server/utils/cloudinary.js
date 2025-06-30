@@ -1,8 +1,6 @@
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
-const multerStorageCloudinary = require('multer-storage-cloudinary');
-console.log('DEBUG: multer-storage-cloudinary exports:', multerStorageCloudinary);
-const { CloudinaryStorage } = multerStorageCloudinary;
+const CloudinaryStorage = require('multer-storage-cloudinary');
 
 // Configure Cloudinary
 cloudinary.config({
@@ -22,23 +20,16 @@ if (cloudinary && CloudinaryStorage && typeof CloudinaryStorage === 'function') 
     console.log('🔑 API Key:', process.env.CLOUDINARY_API_KEY ? 'Set' : 'Not set');
     console.log('🔐 API Secret:', process.env.CLOUDINARY_API_SECRET ? 'Set' : 'Not set');
 
-    // Configure Cloudinary storage
-    console.log('🔧 Creating CloudinaryStorage instance...');
-    console.log('🔧 Cloudinary instance type:', typeof cloudinary);
-    console.log('🔧 Cloudinary uploader available:', !!cloudinary.uploader);
-    console.log('🔧 Full cloudinary object keys:', Object.keys(cloudinary));
-    
-    // Use the cloudinary instance directly
+    // Configure Cloudinary storage (v1.x API)
+    console.log('🔧 Creating CloudinaryStorage instance (v1.x style)...');
     storage = new CloudinaryStorage({
       cloudinary: cloudinary, // Pass the cloudinary instance directly
-      params: {
-        folder: 'pokemon-collectr',
-        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-        transformation: [
-          { width: 800, height: 800, crop: 'limit' }, // Resize large images
-          { quality: 'auto:good' } // Optimize quality
-        ]
-      }
+      folder: 'pokemon-collectr',
+      allowedFormats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+      transformation: [
+        { width: 800, height: 800, crop: 'limit' }, // Resize large images
+        { quality: 'auto:good' } // Optimize quality
+      ]
     });
     console.log('✅ CloudinaryStorage instance created successfully');
 
