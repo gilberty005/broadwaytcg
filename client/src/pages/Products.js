@@ -349,7 +349,7 @@ const Products = () => {
               </div>
               
               <div className="p-4">
-                <h3 className="font-semibold text-gray-900 mb-1">{product.name}</h3>
+                <h3 className="font-semibold text-gray-900 mb-1 truncate w-full" title={product.name}>{product.name}</h3>
                 <p className="text-sm text-gray-600 mb-2">{product.set_name}</p>
                 
                 <div className="flex justify-between items-center text-sm mb-3 min-h-[1.5rem]">

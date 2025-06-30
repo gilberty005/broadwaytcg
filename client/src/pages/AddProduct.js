@@ -167,7 +167,8 @@ const AddProduct = () => {
             )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Or enter image URL</label>
-              <input type="url" name="image_url" value={formData.image_url} onChange={handleInputChange} className="input-field" placeholder="https://example.com/image.jpg" required />
+              <input type="url" name="image_url" value={formData.image_url} readOnly className="input-field bg-gray-100 cursor-not-allowed" placeholder="This will be auto-filled after upload" />
+              <p className="text-xs text-gray-500 mt-1">This field is auto-filled after uploading an image.</p>
             </div>
           </div>
         </div>
