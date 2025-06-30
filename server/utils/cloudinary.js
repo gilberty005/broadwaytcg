@@ -1,9 +1,9 @@
 const multer = require('multer');
-const cloudinary = require('cloudinary').v2;
+const cloudinary = require('cloudinary');
 const CloudinaryStorage = require('multer-storage-cloudinary');
 
-// Configure Cloudinary
-cloudinary.config({
+// Configure Cloudinary (use v2 for config)
+cloudinary.v2.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
@@ -23,7 +23,7 @@ if (cloudinary && CloudinaryStorage && typeof CloudinaryStorage === 'function') 
     // Configure Cloudinary storage (v1.x API)
     console.log('🔧 Creating CloudinaryStorage instance (v1.x style)...');
     storage = new CloudinaryStorage({
-      cloudinary: cloudinary, // Pass the cloudinary instance directly
+      cloudinary: cloudinary, // pass the whole module
       folder: 'pokemon-collectr',
       allowedFormats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
       transformation: [
