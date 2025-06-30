@@ -65,8 +65,12 @@ if (cloudinary && CloudinaryStorage && typeof CloudinaryStorage === 'function') 
 
     // Configure Cloudinary storage
     console.log('🔧 Creating CloudinaryStorage instance...');
+    console.log('🔧 Cloudinary instance type:', typeof cloudinary);
+    console.log('🔧 Cloudinary v2 available:', !!cloudinary.v2);
+    console.log('🔧 Cloudinary uploader available:', !!cloudinary.v2?.uploader);
+    
     storage = new CloudinaryStorage({
-      cloudinary: cloudinary,
+      cloudinary: cloudinary.v2,
       params: {
         folder: 'pokemon-collectr',
         allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
