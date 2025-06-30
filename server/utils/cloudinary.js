@@ -14,13 +14,29 @@ try {
   const multerStorageCloudinary = require('multer-storage-cloudinary');
   console.log('✅ multer-storage-cloudinary package loaded successfully');
   console.log('📦 Available exports:', Object.keys(multerStorageCloudinary));
+  console.log('📦 Full module:', multerStorageCloudinary);
   
-  CloudinaryStorage = multerStorageCloudinary.CloudinaryStorage;
+  // Try different ways to access CloudinaryStorage
+  CloudinaryStorage = multerStorageCloudinary.CloudinaryStorage || 
+                     multerStorageCloudinary.default || 
+                     multerStorageCloudinary;
+  
   console.log('📦 CloudinaryStorage constructor:', typeof CloudinaryStorage);
+  console.log('📦 CloudinaryStorage value:', CloudinaryStorage);
   
   if (typeof CloudinaryStorage !== 'function') {
     console.log('❌ CloudinaryStorage is not a constructor function');
-    CloudinaryStorage = null;
+    console.log('🔍 Trying alternative import method...');
+    
+    // Try alternative import
+    try {
+      const { CloudinaryStorage: AltCloudinaryStorage } = require('multer-storage-cloudinary');
+      CloudinaryStorage = AltCloudinaryStorage;
+      console.log('📦 Alternative CloudinaryStorage:', typeof CloudinaryStorage);
+    } catch (altError) {
+      console.log('❌ Alternative import also failed:', altError.message);
+      CloudinaryStorage = null;
+    }
   } else {
     console.log('✅ CloudinaryStorage constructor is available');
   }
@@ -32,7 +48,7 @@ try {
 // Create storage and upload instances
 let storage, upload;
 
-if (cloudinary && CloudinaryStorage) {
+if (cloudinary && CloudinaryStorage && typeof CloudinaryStorage === 'function') {
   try {
     // Configure Cloudinary
     cloudinary.config({
@@ -110,7 +126,7 @@ const getImageUrl = (publicId, options = {}) => {
 
 // Check if Cloudinary is properly configured
 const isCloudinaryConfigured = () => {
-  const hasDeps = cloudinary && CloudinaryStorage;
+  const hasDeps = cloudinary && CloudinaryStorage && typeof CloudinaryStorage === 'function';
   const hasEnvVars = process.env.CLOUDINARY_CLOUD_NAME && 
                     process.env.CLOUDINARY_API_KEY && 
                     process.env.CLOUDINARY_API_SECRET;
